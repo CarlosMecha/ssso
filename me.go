@@ -2,92 +2,28 @@ package main
 
 import (
 	"encoding/json"
-	"log"
+	"html/template"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/sirupsen/logrus"
 )
-
-const meHTML = `
-<html>
-	<head>
-		<title>SSSO</title>
-	</head>
-	<body>
-		<h1>Hi {{.Name}}!</h1>
-
-		<form action="/logout" method="post">
-			<button type="submit">Logout</button>	
-		</form>
-
-		<form action="/me" method="post">
-			<h3>Settings</h3>
-			<div>	
-				<label for="loginNameInput">Login Name:</label><input type="text" id="loginNameInput" name="loginName" value="{{.LoginName}}" disabled></input>
-				<br/>
-				<label for="passwordInput">Current Password:</label><input type="text" id="passwordInput" name="password"></input>
-				<label for="newPasswordInput">New Password:</label><input type="text" id="newPasswordInput" name="newPassword"></input>
-				<label for="repeatPasswordInput">Repeat New Password:</label><input type="text" id="repeatPasswordInput" name="repeatPassword"></input>
-
-				{{if .PasswordUpdated}}
-					<strong>Password updated</strong>
-				{{end}}
-			</div>
-
-			<h3>Personal access tokens</h3>
-			{{with .AccessTokens}}
-			<table>
-				<tr><th>Name</th><th>Last Used</th><th>Revoke</th></tr>
-				{{range $i, $token := .}}
-				<tr>
-					<td>{{$token.Name}}</td>
-					{{if $token.LastUsed}}
-						<td>{{.LastUsed}}</td>
-					{{else}}
-						<td>Never</td>
-					{{end}}
-					<td><input type="checkbox" name="revoke" value="{{.ID}}"/></td>
-				</tr>
-				{{end}}
-			</table>
-			{{end}}
-
-			<div>
-				<label for="newTokenName">New token name: </label><input type="text" id="newTokenName" name="name" value=""/>
-			</div>
-
-			{{if .NewAccessToken}}
-				<p><strong>New access token, please keep it secret: {{.NewAccessToken}}</strong></p>
-			{{end}}
-
-			<h3>Sessions</h3>
-			{{with .Sessions}}
-			<table>
-				<tr><th>Agent</th></tr>
-				{{range $i, $session := .}}
-				<tr><td>{{$session.Agent}}</td></tr>
-				{{end}}
-			</table>
-			{{end}}
-			
-			{{if .Sessions}}
-				<label for="expireCheckbox">Expire all sessions</label><input type="checkbox" id="expireCheckbox" name="expire" value="expireAllSessions"></input> 
-			{{end}}
-
-			{{if .Error}}
-				<p><strong>{{.Error}}</strong></p>
-			{{end}}
-			<br/>
-			<br/>
-			<button type="submit">Save</button>	
-		</form>
-	</body>
-</html>
-`
 
 // MeHandler handles personal pages requests
 type MeHandler struct {
-	store *Store
+	store    *Store
+	template *template.Template
+}
+
+// NewMeHandler creates the handler for /me requests
+func NewMeHandler(store *Store, tmplFile string) *MeHandler {
+	t := template.Must(template.New("me.html").ParseFiles(tmplFile))
+
+	return &MeHandler{
+		store:    store,
+		template: t,
+	}
 }
 
 // MeContext is the context for the me.html page
@@ -99,7 +35,7 @@ type MeContext struct {
 }
 
 func (h *MeHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	log.Println("Me")
+	logrus.Debugf("Requesting %s %s", req.Method, req.URL.Path)
 
 	if req.URL.Path != "/me" || (req.Method != http.MethodGet && req.Method != http.MethodPost) {
 		w.WriteHeader(404)
@@ -114,10 +50,11 @@ func (h *MeHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	user, err := h.store.GetUser(loginName)
 	if err == ErrUserNotFound {
+		logrus.Debug("User not found")
 		w.WriteHeader(401)
 		return
 	} else if err != nil {
-		log.Fatalf("Unable to retrieve user: %s\n", err.Error())
+		logrus.Fatalf("Unable to retrieve user: %s", err.Error())
 		w.WriteHeader(500)
 		return
 	}
@@ -129,19 +66,19 @@ func (h *MeHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			w.Header()["Content-Type"] = []string{"application/json; charset=utf-8"}
 			encoder := json.NewEncoder(w)
 			if err := encoder.Encode(user); err != nil {
-				log.Fatalf("Unable to marshal user: %s\n", err.Error())
+				logrus.Errorf("Unable to marshal user: %s", err.Error())
 				w.WriteHeader(500)
 			}
 		} else {
-			writeMePage(200, ctx, w)
+			WriteHTMLTemplate(200, h.template, ctx, w)
 		}
 		return
 	}
 
 	if err := req.ParseForm(); err != nil {
-		log.Printf("ERROR parsing form: %s\n", err.Error())
+		logrus.Errorf("Unable to parse form: %s", err.Error())
 		ctx.Error = "Error submitting the form, please try again"
-		writeMePage(400, ctx, w)
+		WriteHTMLTemplate(400, h.template, ctx, w)
 		return
 	}
 
@@ -151,26 +88,26 @@ func (h *MeHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if (foundNewPassword || foundRepeatPassword) && (newPassword != "" || repeatPassword != "") {
 		if newPassword != repeatPassword {
 			ctx.Error = "The new password does not match"
-			writeMePage(400, ctx, w)
+			WriteHTMLTemplate(400, h.template, ctx, w)
 		} else if len(newPassword) < 8 || len(newPassword) > 64 {
 			ctx.Error = "Invalid new password, introduce a new password between 8 to 64 characters"
-			writeMePage(400, ctx, w)
+			WriteHTMLTemplate(400, h.template, ctx, w)
 		}
 
 		password, found := GetFormString("password", req.Form)
 		if !found || password == "" {
 			ctx.Error = "Please introduce your current password"
-			writeMePage(400, ctx, w)
+			WriteHTMLTemplate(400, h.template, ctx, w)
 		}
 
 		if err := h.store.ValidateCredentials(Credentials{loginName: loginName, password: password}); err != nil {
 			ctx.Error = "Invalid password"
-			writeMePage(400, ctx, w)
+			WriteHTMLTemplate(400, h.template, ctx, w)
 		}
 
 		if err := h.store.UpdatePassword(loginName, newPassword); err != nil {
 			ctx.Error = "Error storing new password, pease try again"
-			writeMePage(500, ctx, w)
+			WriteHTMLTemplate(500, h.template, ctx, w)
 		}
 
 		ctx.PasswordUpdated = "Your password has been updated"
@@ -184,14 +121,14 @@ func (h *MeHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			tokenID, err := strconv.Atoi(value)
 			if err != nil {
 				ctx.Error = "Error submitting the form, please try again"
-				writeMePage(400, ctx, w)
+				WriteHTMLTemplate(400, h.template, ctx, w)
 				return
 			}
 
 			if err := h.store.RevokeAccessToken(loginName, tokenID); err != nil && err != ErrTokenInvalid {
-				log.Printf("Error revoking token: %s", err)
+				logrus.Errorf("Error revoking token: %s", err)
 				ctx.Error = "Internal error, please try again"
-				writeMePage(500, ctx, w)
+				WriteHTMLTemplate(500, h.template, ctx, w)
 				return
 			}
 
@@ -213,9 +150,9 @@ func (h *MeHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if found && tokenName != "" {
 		tokenID, token, err := h.store.CreateAccessToken(loginName, tokenName)
 		if err != nil {
-			log.Printf("Error creating token: %s", err)
+			logrus.Errorf("Error creating token: %s", err)
 			ctx.Error = "Internal error, please try again"
-			writeMePage(500, ctx, w)
+			WriteHTMLTemplate(500, h.template, ctx, w)
 			return
 		}
 
@@ -228,17 +165,14 @@ func (h *MeHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if found && len(expireSessions) > 0 && expireSessions[0] == "expireAllSessions" {
 		if err := h.store.ExpireAllSessions(loginName); err != nil {
 			ctx.Error = "Internal error, please try again"
-			writeMePage(500, ctx, w)
+			WriteHTMLTemplate(500, h.template, ctx, w)
 			return
 		}
 
 	}
 
 	// All ok, redirect to /me
+	logrus.Debugf("Request to %s %s completed", req.Method, req.URL.Path)
 	http.Redirect(w, req, "/me", 302)
 
-}
-
-func writeMePage(code int, ctx MeContext, w http.ResponseWriter) {
-	WriteHTMLTemplate(code, "me.html", meHTML, ctx, w)
 }

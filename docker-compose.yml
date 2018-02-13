@@ -24,10 +24,9 @@ services:
     environment:
       - "SSSO_DB_HOST=database"
       - "SSSO_DOMAIN=.localhost-test.com"
+      - "SSSO_DATA=/www/"
     depends_on:
       - database
-    entrypoint: |
-      /bin/bash -c "sleep 3; ssso"
 
   # a.localhost-test.com
   appA:

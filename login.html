@@ -1,0 +1,24 @@
+<html>
+	<head>
+		<title>SSSO</title>
+	</head>
+	<body>
+		<form action="/login" method="post">
+			<div>
+				<input type="text" placeholder="Enter Username" name="loginname" required/>
+				<input type="password" placeholder="Enter Password" name="password" required/>
+			</div>
+
+			{{if .Error}}
+				<p><strong>{{.Error}}</strong></p>
+			{{else}}
+			{{end}}
+
+			<div>
+				<label for="rememberMe">Remember for one week?</label>
+				<input type="checkbox" id="rememberMe" name="remember" value="remember">
+			</div>
+			<div><input type="submit" name="submit"></div>
+		</form>
+	</body>
+</html>

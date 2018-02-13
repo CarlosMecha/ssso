@@ -1,8 +1,9 @@
 package main
 
 import (
-	"log"
 	"net/http"
+
+	"github.com/sirupsen/logrus"
 )
 
 // AuthHandler handles authentication requests
@@ -20,9 +21,7 @@ const (
 )
 
 func (h *AuthHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-
-	log.Println("Auth")
-	log.Printf("Headers for auth: %v", req.Header)
+	logrus.Debugf("Requesting %s %s", req.Method, req.URL.Path)
 
 	if req.URL.Path != "/authenticate" || req.Method != http.MethodGet {
 		w.WriteHeader(404)
@@ -41,8 +40,9 @@ func (h *AuthHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	log.Printf("No auth")
+	logrus.Debug("Missing auth")
 	w.Header()["WWW-Authenticate"] = []string{"Credentials realm=\"Access to SSSO\", charset=\"UTF-8\""}
+	logrus.Debugf("Request to %s %s completed", req.Method, req.URL.Path)
 	w.WriteHeader(403)
 	return
 }
@@ -58,12 +58,12 @@ func getHeader(name string, req *http.Request) (string, bool) {
 func (h *AuthHandler) handleAuth(auth Authorization, err error, w http.ResponseWriter) {
 	if err != nil {
 		if err == ErrSessionExpired || err == ErrSessionInvalid || err == ErrTokenRevoked || err == ErrTokenInvalid {
-			log.Printf("Invalid auth: %s", err.Error())
+			logrus.Debugf("Invalid auth: %s", err.Error())
 			w.WriteHeader(401)
 			return
 		}
 
-		log.Printf("ERROR Auth session: %s", err.Error())
+		logrus.Errorf("Error auth session: %s", err.Error())
 		w.WriteHeader(500)
 		return
 	}
@@ -71,4 +71,5 @@ func (h *AuthHandler) handleAuth(auth Authorization, err error, w http.ResponseW
 	headers := w.Header()
 	headers[UserHeader] = []string{auth.LoginName}
 	w.WriteHeader(200)
+	logrus.Debug("Request to POST /authenticate completed")
 }

@@ -61,5 +61,5 @@ Use docker compose to start all components and add to your `/etc/hosts`:
 ## TODO
 
 - Clean up the code
-- Move the html code to template files
 - Add some neat CSS
+- Add user registration

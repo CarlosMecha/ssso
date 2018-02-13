@@ -4,12 +4,14 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -44,21 +46,21 @@ func insertUser(store *Store) {
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		log.Fatalf("Error hashing password: %s\n", err.Error())
+		logrus.Fatalf("Error hashing password: %s", err.Error())
 	}
 
 	if _, err := store.pool.Exec("INSERT INTO users (login_name, name, email, password) VALUES ($1, $2, $3, $4)", loginName, name, email, hash); err != nil {
-		log.Fatalf("Error inserting user: %s\n", err.Error())
+		logrus.Fatalf("Error inserting user: %s", err.Error())
 	}
 }
 
 func main() {
-	log.SetOutput(os.Stdout)
+	logrus.SetOutput(os.Stdout)
 
 	envPort := Getenv("SSSO_DB_PORT", "5432")
 	port, err := strconv.Atoi(envPort)
 	if err != nil {
-		log.Fatalf("Unable to parse db port: %s", envPort)
+		logrus.Fatalf("Unable to parse db port: %s", envPort)
 	}
 
 	config := StoreConfiguration{
@@ -70,9 +72,16 @@ func main() {
 		Base64Key: Getenv("SSSO_KEY", "5247DBA0A29CBBBF9DED3C907B7E0DE9"),
 	}
 
+	logrus.Debug("Configuration %v", config)
+
 	store, err := NewStore(context.Background(), config)
 	if err != nil {
-		log.Fatalf("ERROR initializing store: %s", err)
+		logrus.Errorf("Error initializing store: %s. Retrying...", err)
+		time.Sleep(3 * time.Second)
+		store, err = NewStore(context.Background(), config)
+		if err != nil {
+			logrus.Fatalf("Error initializing store: %s.", err)
+		}
 	}
 	defer store.Close()
 
@@ -82,9 +91,37 @@ func main() {
 	}
 
 	http.Handle("/authenticate", &AuthHandler{store})
-	http.Handle("/login", &LoginHandler{store: store, cookieDomain: Getenv("SSSO_DOMAIN", "mydomain.com")})
+	http.Handle("/login", NewLoginHandler(store, Getenv("SSSO_DOMAIN", "mydomain.com"), Getenv("SSSO_DATA", "")+"login.html"))
 	http.Handle("/logout", &LogoutHandler{})
-	http.Handle("/me", &MeHandler{store})
+	http.Handle("/me", NewMeHandler(store, Getenv("SSSO_DATA", "")+"me.html"))
 	http.Handle("/api", &APIHandler{store})
-	http.ListenAndServe(Getenv("SSSO_ADDRESS", ":80"), nil)
+	addr := Getenv("SSSO_ADDRESS", ":80")
+
+	server := &http.Server{Addr: addr}
+	done := make(chan struct{})
+
+	go func() {
+		stop := make(chan os.Signal, 1)
+		signal.Notify(stop)
+		<-stop
+
+		logrus.Info("Shutting down the server...")
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		if err := server.Shutdown(ctx); err != nil {
+			logrus.Errorf("Error shutting down the server: %s", err.Error())
+		} else {
+			logrus.Info("Server stopped")
+		}
+		cancel()
+		close(done)
+	}()
+
+	logrus.Infof("Starting server on %s", addr)
+
+	if err := server.ListenAndServe(); err != http.ErrServerClosed {
+		logrus.Fatal(err)
+	}
+
+	<-done
+
 }

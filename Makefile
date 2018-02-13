@@ -1,9 +1,11 @@
 
 bin/ssso:
-	go build -o bin/ssso .
+	govendor build -o bin/ssso .
 build: bin/ssso	
 	docker build --rm -t carlosmecha/ssso .
 
+test:
+	govendor test -race -cover +local
 run: build
 	docker run --rm -p "8080:80" carlosmecha/ssso
 

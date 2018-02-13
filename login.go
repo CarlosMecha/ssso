@@ -1,56 +1,42 @@
 package main
 
 import (
-	"log"
+	"html/template"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 // CookieName for the session
 const CookieName = "ssso-session"
 
-const loginHTML = `
-<html>
-	<head>
-		<title>SSSO</title>
-	</head>
-	<body>
-		<form action="/login" method="post">
-			<div>
-				<input type="text" placeholder="Enter Username" name="loginname" required/>
-				<input type="password" placeholder="Enter Password" name="password" required/>
-			</div>
-
-			{{if .Error}}
-				<p><strong>{{.Error}}</strong></p>
-			{{else}}
-			{{end}}
-
-			<div>
-				<label for="rememberMe">Remember for one week?</label>
-				<input type="checkbox" id="rememberMe" name="remember" value="remember">
-			</div>
-			<div><input type="submit" name="submit">Login</input></div>
-		</form>
-	</body>
-</html>
-`
-
 // LoginHandler handles the login page and requests
 type LoginHandler struct {
 	cookieDomain string
 	store        *Store
+	template     *template.Template
 }
 
+// NewLoginHandler returns a handler for login requests
+func NewLoginHandler(store *Store, domain, tmplFile string) *LoginHandler {
+	t := template.Must(template.New("login.html").ParseFiles(tmplFile))
+
+	return &LoginHandler{
+		cookieDomain: domain,
+		store:        store,
+		template:     t,
+	}
+}
+
+// LoginContext contains all data for the login template
 type LoginContext struct {
 	Error string
 }
 
 func (h *LoginHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-
-	log.Println("Login")
-	log.Printf("Headers for login: %v", req.Header)
+	logrus.Debugf("Requesting %s %s", req.Method, req.URL.Path)
 
 	if req.URL.Path != "/login" || !(req.Method == http.MethodGet || req.Method == http.MethodPost) {
 		w.WriteHeader(404)
@@ -58,23 +44,24 @@ func (h *LoginHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if req.Method == http.MethodGet {
-		writeLoginPage(200, LoginContext{}, w)
+		WriteHTMLTemplate(200, h.template, LoginContext{}, w)
 		return
 	}
 
 	creds, err := getCredentials(req)
 	if err != nil {
 		if err == ErrInvalidCredentials {
-			writeLoginPage(401, LoginContext{Error: "Invalid credentials"}, w)
+			WriteHTMLTemplate(401, h.template, LoginContext{Error: "Invalid credentials"}, w)
 			return
 		}
+		logrus.Errorf("Error getting credentials: %s", err.Error())
 		w.WriteHeader(400)
 		return
 	}
 
 	session, err := h.store.Login(creds)
 	if err != nil {
-		writeLoginPage(401, LoginContext{Error: "Invalid credentials"}, w)
+		WriteHTMLTemplate(401, h.template, LoginContext{Error: "Invalid credentials"}, w)
 		return
 	}
 
@@ -87,12 +74,14 @@ func (h *LoginHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	http.SetCookie(w, cookie)
+
+	logrus.Debugf("Request to %s %s completed", req.Method, req.URL.Path)
 	http.Redirect(w, req, "/me", 302)
 }
 
 func getCredentials(r *http.Request) (Credentials, error) {
 	if err := r.ParseForm(); err != nil {
-		log.Printf("ERROR parsing form: %s\n", err.Error())
+		logrus.Errorf("Error parsing form: %s", err.Error())
 		return Credentials{}, err
 	}
 
@@ -116,8 +105,4 @@ func getCredentials(r *http.Request) (Credentials, error) {
 	}
 
 	return creds, nil
-}
-
-func writeLoginPage(code int, ctx interface{}, w http.ResponseWriter) {
-	WriteHTMLTemplate(code, "login.html", loginHTML, ctx, w)
 }

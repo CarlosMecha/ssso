@@ -43,7 +43,7 @@ func TestServeHTTP_login(t *testing.T) {
 			[]interface{}{"INSERT INTO users (login_name, name, email, password) VALUES ('test_1', 'test 1', '1@test.com', $1)", hashTestPassword(store, "12345", t)},
 		},
 		req:          req2,
-		expectedCode: 200,
+		expectedCode: 302,
 	})
 
 	// OK (remember)
@@ -57,7 +57,7 @@ func TestServeHTTP_login(t *testing.T) {
 	}
 	cases = append(cases, loginCase{
 		req:          req3,
-		expectedCode: 200,
+		expectedCode: 302,
 	})
 
 	// Invalid credentials
@@ -94,7 +94,7 @@ func TestServeHTTP_login(t *testing.T) {
 	}
 	cases = append(cases, loginCase{req: req6, expectedCode: 404})
 
-	handler := LoginHandler{store: store}
+	handler := NewLoginHandler(store, "test.com", "login.html")
 
 	for i, test := range cases {
 		executeStatements(store, test.sql, t)

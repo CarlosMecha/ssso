@@ -1,16 +1,17 @@
 package main
 
 import (
-	"log"
 	"net/http"
+
+	"github.com/sirupsen/logrus"
 )
 
 // LogoutHandler removes the session cookie
 type LogoutHandler struct{}
 
 func (h *LogoutHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	logrus.Debugf("Requesting %s %s", req.Method, req.URL.Path)
 
-	log.Println("Logout")
 	if req.URL.Path != "/logout" || req.Method != http.MethodPost {
 		w.WriteHeader(404)
 		return
@@ -22,7 +23,7 @@ func (h *LogoutHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			http.Redirect(w, req, "/login", 302)
 			return
 		}
-		log.Printf("ERROR reading cookie: %s\n", err.Error())
+		logrus.Errorf("Error reading cookie: %s", err.Error())
 		w.WriteHeader(400)
 		return
 	}
@@ -30,7 +31,7 @@ func (h *LogoutHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	cookie.Value = "--"
 	cookie.MaxAge = -1
 	http.SetCookie(w, cookie)
-	http.Redirect(w, req, "/login", 302)
 
-	// No need (yet) for invalidating the session server side.
+	logrus.Debugf("Request to %s %s completed", req.Method, req.URL.Path)
+	http.Redirect(w, req, "/login", 302)
 }

@@ -73,7 +73,7 @@ func TestServeHTTP_me(t *testing.T) {
 			[]interface{}{"INSERT INTO users (login_name, name, email, password) VALUES ('test_2', 'test 2', '2@test.com', $1)", hashTestPassword(store, "12345", t)},
 		},
 		req:          req4,
-		expectedCode: 200,
+		expectedCode: 302,
 	})
 
 	// Update password, invalid current password
@@ -116,7 +116,7 @@ func TestServeHTTP_me(t *testing.T) {
 			[]interface{}{"INSERT INTO access_tokens (id, login_name, name, secret) VALUES (1003, 'test_3', 'test', '12345678')"},
 		},
 		req:          req7,
-		expectedCode: 200,
+		expectedCode: 302,
 	})
 
 	// New access token
@@ -133,7 +133,7 @@ func TestServeHTTP_me(t *testing.T) {
 			[]interface{}{"INSERT INTO access_tokens (id, login_name, name, secret) VALUES (1004, 'test_4', 'test', '12345678')"},
 		},
 		req:          req8,
-		expectedCode: 200,
+		expectedCode: 302,
 	})
 
 	// Expire sessions
@@ -152,10 +152,10 @@ func TestServeHTTP_me(t *testing.T) {
 			[]interface{}{"INSERT INTO sessions (id, login_name, agent, secret, expires_on) VALUES (1002, 'test_5', 'test', '12345678', '2025-01-01'::TIMESTAMP)"},
 		},
 		req:          req9,
-		expectedCode: 200,
+		expectedCode: 302,
 	})
 
-	handler := MeHandler{store: store}
+	handler := NewMeHandler(store, "me.html")
 
 	for i, test := range cases {
 		executeStatements(store, test.sql, t)

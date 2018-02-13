@@ -8,12 +8,12 @@ import (
 	"encoding/base64"
 	"errors"
 	"io"
-	"log"
 	"strings"
 	"time"
 
 	"github.com/dchest/uniuri"
 	"github.com/jackc/pgx"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -166,7 +166,7 @@ func (s *Store) AuthenticateAccessToken(token string) (Authorization, error) {
 	row = s.pool.QueryRow("SELECT email FROM users WHERE login_name = $1", loginName)
 	if err := row.Scan(&auth.Email); err != nil {
 		if err == pgx.ErrNoRows {
-			log.Printf("WARN: Access tokens for missing user %s\n", loginName)
+			logrus.Warnf("Access tokens for missing user %s", loginName)
 			return Authorization{}, ErrTokenInvalid
 		}
 		return Authorization{}, err
@@ -230,7 +230,7 @@ func (s *Store) AuthenticateSession(cookieValue string) (Authorization, error) {
 
 	data, err := s.decrypt(cookieValue)
 	if err != nil || len(data) != loginNameSize+secretSize+agentSize {
-		log.Printf("Invalid data size (%d) or error %v: %s", len(data), err, data)
+		logrus.Errorf("Invalid data size (%d) or error %v: %s", len(data), err, data)
 		return Authorization{}, ErrSessionInvalid
 	}
 
@@ -243,7 +243,7 @@ func (s *Store) AuthenticateSession(cookieValue string) (Authorization, error) {
 	row := s.pool.QueryRow("SELECT id, expires_on FROM sessions WHERE login_name = $1 AND secret = $2 AND agent = $3", loginName, secret, agent)
 	if err := row.Scan(&id, &expiresOn); err != nil {
 		if err == pgx.ErrNoRows {
-			log.Printf("No rows returned for session")
+			logrus.Debug("No rows returned for session")
 			return Authorization{}, ErrSessionInvalid
 		}
 		return Authorization{}, err
@@ -257,7 +257,7 @@ func (s *Store) AuthenticateSession(cookieValue string) (Authorization, error) {
 	row = s.pool.QueryRow("SELECT email FROM users WHERE login_name = $1", loginName)
 	if err := row.Scan(&auth.Email); err != nil {
 		if err == pgx.ErrNoRows {
-			log.Printf("WARN: Sessions for missing user %s\n", loginName)
+			logrus.Warnf("Sessions for missing user %s", loginName)
 			return Authorization{}, ErrSessionInvalid
 		}
 		return Authorization{}, err

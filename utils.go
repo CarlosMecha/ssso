@@ -2,19 +2,18 @@ package main
 
 import (
 	"html/template"
-	"log"
 	"net/http"
 	"net/url"
+
+	"github.com/sirupsen/logrus"
 )
 
 // WriteHTMLTemplate returns a HTML page with a HTTP code
-func WriteHTMLTemplate(code int, templateName, content string, data interface{}, w http.ResponseWriter) {
-	t := template.Must(template.New(templateName).Parse(content))
-
+func WriteHTMLTemplate(code int, t *template.Template, data interface{}, w http.ResponseWriter) {
 	w.Header()["Content-Type"] = []string{"text/html"}
 	w.WriteHeader(code)
 	if err := t.Execute(w, data); err != nil {
-		log.Printf("ERROR writing page: %s\n", err.Error())
+		logrus.Errorf("Error writing page: %s", err.Error())
 		w.WriteHeader(500)
 	}
 }

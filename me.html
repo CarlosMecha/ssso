@@ -1,0 +1,74 @@
+<html>
+	<head>
+		<title>SSSO</title>
+	</head>
+	<body>
+		<h1>Hi {{.Name}}!</h1>
+
+		<form action="/logout" method="post">
+			<button type="submit">Logout</button>	
+		</form>
+
+		<form action="/me" method="post">
+			<h3>Settings</h3>
+			<div>	
+				<label for="loginNameInput">Login Name:</label><input type="text" id="loginNameInput" name="loginName" value="{{.LoginName}}" disabled></input>
+				<br/>
+				<label for="passwordInput">Current Password:</label><input type="text" id="passwordInput" name="password"></input>
+				<label for="newPasswordInput">New Password:</label><input type="text" id="newPasswordInput" name="newPassword"></input>
+				<label for="repeatPasswordInput">Repeat New Password:</label><input type="text" id="repeatPasswordInput" name="repeatPassword"></input>
+
+				{{if .PasswordUpdated}}
+					<strong>Password updated</strong>
+				{{end}}
+			</div>
+
+			<h3>Personal access tokens</h3>
+			{{with .AccessTokens}}
+			<table>
+				<tr><th>Name</th><th>Last Used</th><th>Revoke</th></tr>
+				{{range $i, $token := .}}
+				<tr>
+					<td>{{$token.Name}}</td>
+					{{if $token.LastUsed}}
+						<td>{{.LastUsed}}</td>
+					{{else}}
+						<td>Never</td>
+					{{end}}
+					<td><input type="checkbox" name="revoke" value="{{.ID}}"/></td>
+				</tr>
+				{{end}}
+			</table>
+			{{end}}
+
+			<div>
+				<label for="newTokenName">New token name: </label><input type="text" id="newTokenName" name="name" value=""/>
+			</div>
+
+			{{if .NewAccessToken}}
+				<p><strong>New access token, please keep it secret: {{.NewAccessToken}}</strong></p>
+			{{end}}
+
+			<h3>Sessions</h3>
+			{{with .Sessions}}
+			<table>
+				<tr><th>Agent</th></tr>
+				{{range $i, $session := .}}
+				<tr><td>{{$session.Agent}}</td></tr>
+				{{end}}
+			</table>
+			{{end}}
+			
+			{{if .Sessions}}
+				<label for="expireCheckbox">Expire all sessions</label><input type="checkbox" id="expireCheckbox" name="expire" value="expireAllSessions"></input> 
+			{{end}}
+
+			{{if .Error}}
+				<p><strong>{{.Error}}</strong></p>
+			{{end}}
+			<br/>
+			<br/>
+			<button type="submit">Save</button>	
+		</form>
+	</body>
+</html>
