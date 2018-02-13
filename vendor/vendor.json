@@ -1,0 +1,67 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "pXA0VXOMBMY18/4WFJjqnsT51jo=",
+			"path": "github.com/dchest/uniuri",
+			"revision": "8902c56451e9b58ff940bbe5fec35d5f9c04584a",
+			"revisionTime": "2016-02-12T16:43:26Z"
+		},
+		{
+			"checksumSHA1": "HvXezendBhyZKb2WicLBxagALhE=",
+			"path": "github.com/jackc/pgx",
+			"revision": "f5c7ef09576a1316c609e509e9a7daa5970cfeaf",
+			"revisionTime": "2018-01-15T16:35:07Z"
+		},
+		{
+			"checksumSHA1": "rsDmBQ/jGFUN2t6G4c3ohkKGKdQ=",
+			"path": "github.com/jackc/pgx/chunkreader",
+			"revision": "f5c7ef09576a1316c609e509e9a7daa5970cfeaf",
+			"revisionTime": "2018-01-15T16:35:07Z"
+		},
+		{
+			"checksumSHA1": "wArf/u0cmHsLafG2tOcjVUUXQBw=",
+			"path": "github.com/jackc/pgx/internal/sanitize",
+			"revision": "f5c7ef09576a1316c609e509e9a7daa5970cfeaf",
+			"revisionTime": "2018-01-15T16:35:07Z"
+		},
+		{
+			"checksumSHA1": "OCtOmvS8BLHQAyQXJ/Ub8QxKz0s=",
+			"path": "github.com/jackc/pgx/pgio",
+			"revision": "f5c7ef09576a1316c609e509e9a7daa5970cfeaf",
+			"revisionTime": "2018-01-15T16:35:07Z"
+		},
+		{
+			"checksumSHA1": "Fj02uVXJiJ8K2DxAwU9zRTj5Ppo=",
+			"path": "github.com/jackc/pgx/pgproto3",
+			"revision": "f5c7ef09576a1316c609e509e9a7daa5970cfeaf",
+			"revisionTime": "2018-01-15T16:35:07Z"
+		},
+		{
+			"checksumSHA1": "R48SikoDGwiKdZ5th5VFI5bD07Y=",
+			"path": "github.com/jackc/pgx/pgtype",
+			"revision": "f5c7ef09576a1316c609e509e9a7daa5970cfeaf",
+			"revisionTime": "2018-01-15T16:35:07Z"
+		},
+		{
+			"checksumSHA1": "xCv4GBFyw07vZkVtKF/XrUnkHRk=",
+			"path": "github.com/pkg/errors",
+			"revision": "e881fd58d78e04cf6d0de1217f8707c8cc2249bc",
+			"revisionTime": "2017-12-16T07:03:16Z"
+		},
+		{
+			"checksumSHA1": "oCH3J96RWvO8W4xjix47PModpio=",
+			"path": "golang.org/x/crypto/bcrypt",
+			"revision": "5119cf507ed5294cc409c092980c7497ee5d6fd2",
+			"revisionTime": "2018-01-22T10:39:14Z"
+		},
+		{
+			"checksumSHA1": "oVPHWesOmZ02vLq2fglGvf+AMgk=",
+			"path": "golang.org/x/crypto/blowfish",
+			"revision": "5119cf507ed5294cc409c092980c7497ee5d6fd2",
+			"revisionTime": "2018-01-22T10:39:14Z"
+		}
+	],
+	"rootPath": "github.com/carlosmecha/ssso"
+}

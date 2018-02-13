@@ -1,0 +1,47 @@
+version: "2"
+services:
+
+  database:
+    image: carlosmecha/ssso-db
+    ports:
+      - "5432:5432"
+
+  # *.localhost-test.com
+  nginx:
+    image: carlosmecha/ssso-nginx
+    ports:
+      - "8080:80"
+    depends_on:
+      - ssso
+      - appA
+      - appB
+
+  # ssso.localhost-test.com
+  ssso:
+    image: carlosmecha/ssso
+    ports:
+      - "8081:80"
+    environment:
+      - "SSSO_DB_HOST=database"
+      - "SSSO_DOMAIN=.localhost-test.com"
+    depends_on:
+      - database
+    entrypoint: |
+      /bin/bash -c "sleep 3; ssso"
+
+  # a.localhost-test.com
+  appA:
+    image: carlosmecha/ssso-app
+    environment:
+      - "APP=A"
+    ports:
+      - "8082:80"
+
+  # b.localhost-test.com
+  appB:
+    image: carlosmecha/ssso-app
+    environment:
+      - "APP=B"
+    ports:
+      - "8083:80"
+    
