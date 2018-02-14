@@ -40,6 +40,10 @@ All parameters must be defined using environment variables:
 - `SSSO_KEY`: Base64 encoded key for encrypt/decrypt text
 - `SSSO_DOMAIN`: Cookie domain, where the cookie is valid
 
+### Creating a encryption key
+
+Use `$ bin/ssso generate-key`. The output is base64 encoded.
+
 ## Passwords
 
 Passwords are stored using the algorithm BCrypt. To insert a new user,

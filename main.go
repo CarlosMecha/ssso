@@ -3,6 +3,8 @@ package main
 import (
 	"bufio"
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"fmt"
 	"net/http"
 	"os"
@@ -54,8 +56,22 @@ func insertUser(store *Store) {
 	}
 }
 
+func generateKey() {
+	key := make([]byte, 32)
+	if _, err := rand.Read(key); err != nil {
+		logrus.Fatalf("Error generating random key: %s", err.Error())
+	}
+
+	fmt.Printf("Base 64 key: %s\n", base64.StdEncoding.EncodeToString(key))
+}
+
 func main() {
 	logrus.SetOutput(os.Stdout)
+
+	if len(os.Args) == 2 && os.Args[1] == "generate-key" {
+		generateKey()
+		return
+	}
 
 	envPort := Getenv("SSSO_DB_PORT", "5432")
 	port, err := strconv.Atoi(envPort)
