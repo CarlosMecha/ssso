@@ -7,10 +7,12 @@ import (
 )
 
 type authorizeCase struct {
-	sql          [][]interface{}
-	req          *http.Request
-	expectedCode int
-	expectedUser string
+	sql           [][]interface{}
+	req           *http.Request
+	expectedCode  int
+	expectedUser  string
+	expectedEmail string
+	expectedName  string
 }
 
 func TestServeHTTP_authorize(t *testing.T) {
@@ -31,9 +33,11 @@ func TestServeHTTP_authorize(t *testing.T) {
 			[]interface{}{"INSERT INTO users (login_name, name, email, password) VALUES ('test_1', 'test 1', '1@test.com', $1)", hashTestPassword(store, "12345", t)},
 			[]interface{}{"INSERT INTO access_tokens (id, login_name, name, secret) VALUES (1000, 'test_1', 'test', '12345678')"},
 		},
-		req:          req1,
-		expectedCode: 200,
-		expectedUser: "test_1",
+		req:           req1,
+		expectedCode:  200,
+		expectedUser:  "test_1",
+		expectedEmail: "1@test.com",
+		expectedName:  "test 1",
 	})
 
 	// OK (session)
@@ -47,9 +51,11 @@ func TestServeHTTP_authorize(t *testing.T) {
 			[]interface{}{"INSERT INTO users (login_name, name, email, password) VALUES ('test_2', 'test 2', '2@test.com', $1)", hashTestPassword(store, "12345", t)},
 			[]interface{}{"INSERT INTO sessions (id, login_name, agent, secret, expires_on) VALUES (1001, 'test_2', 'test_agent', '12345678', '2025-01-01'::TIMESTAMP)"},
 		},
-		req:          req2,
-		expectedCode: 200,
-		expectedUser: "test_2",
+		req:           req2,
+		expectedCode:  200,
+		expectedUser:  "test_2",
+		expectedEmail: "2@test.com",
+		expectedName:  "test 2",
 	})
 
 	// Invalid access token
@@ -141,6 +147,18 @@ func TestServeHTTP_authorize(t *testing.T) {
 		if auth, found := recorder.HeaderMap["X-Auth-User"]; recorder.Code == 200 && found && len(auth) > 0 {
 			if auth[0] != test.expectedUser {
 				t.Errorf("[Test %d] Expected user %s got %s", i, test.expectedUser, auth[0])
+			}
+		}
+
+		if auth, found := recorder.HeaderMap["X-Auth-Email"]; recorder.Code == 200 && found && len(auth) > 0 {
+			if auth[0] != test.expectedEmail {
+				t.Errorf("[Test %d] Expected email %s got %s", i, test.expectedEmail, auth[0])
+			}
+		}
+
+		if auth, found := recorder.HeaderMap["X-Auth-Name"]; recorder.Code == 200 && found && len(auth) > 0 {
+			if auth[0] != test.expectedName {
+				t.Errorf("[Test %d] Expected name %s got %s", i, test.expectedName, auth[0])
 			}
 		}
 

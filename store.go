@@ -52,6 +52,7 @@ type Store struct {
 type Authorization struct {
 	LoginName string
 	Email     string
+	Name      string
 }
 
 // StoreConfiguration describes the store
@@ -163,8 +164,8 @@ func (s *Store) AuthenticateAccessToken(token string) (Authorization, error) {
 	}
 
 	auth := Authorization{LoginName: loginName}
-	row = s.pool.QueryRow("SELECT email FROM users WHERE login_name = $1", loginName)
-	if err := row.Scan(&auth.Email); err != nil {
+	row = s.pool.QueryRow("SELECT email, name FROM users WHERE login_name = $1", loginName)
+	if err := row.Scan(&auth.Email, &auth.Name); err != nil {
 		if err == pgx.ErrNoRows {
 			logrus.Warnf("Access tokens for missing user %s", loginName)
 			return Authorization{}, ErrTokenInvalid
@@ -254,8 +255,8 @@ func (s *Store) AuthenticateSession(cookieValue string) (Authorization, error) {
 	}
 
 	auth := Authorization{LoginName: loginName}
-	row = s.pool.QueryRow("SELECT email FROM users WHERE login_name = $1", loginName)
-	if err := row.Scan(&auth.Email); err != nil {
+	row = s.pool.QueryRow("SELECT email, name FROM users WHERE login_name = $1", loginName)
+	if err := row.Scan(&auth.Email, &auth.Name); err != nil {
 		if err == pgx.ErrNoRows {
 			logrus.Warnf("Sessions for missing user %s", loginName)
 			return Authorization{}, ErrSessionInvalid

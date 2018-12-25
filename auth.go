@@ -14,6 +14,10 @@ type AuthHandler struct {
 const (
 	// UserHeader contains the login name for the authenticated user
 	UserHeader = "X-Auth-User"
+	// EmailHeader for the authenticated user
+	EmailHeader = "X-Auth-User-Email"
+	// NameHeader for the authenticated user
+	NameHeader = "X-Auth-User-Name"
 	// CookieTokenHeader contains the session cookie value
 	CookieTokenHeader = "X-Auth-Cookie-Token"
 	// AccessTokenHeader contains the personal access token
@@ -70,6 +74,8 @@ func (h *AuthHandler) handleAuth(auth Authorization, err error, w http.ResponseW
 
 	headers := w.Header()
 	headers[UserHeader] = []string{auth.LoginName}
+	headers[EmailHeader] = []string{auth.Email}
+	headers[NameHeader] = []string{auth.Name}
 	w.WriteHeader(200)
 	logrus.Debug("Request to POST /authenticate completed")
 }

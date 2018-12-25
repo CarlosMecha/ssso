@@ -11,6 +11,8 @@ session cookies or access tokens. Headers:
     - `X-Auth-Cookie-Token`
 If the request was successful, the response contains:
     - `X-Auth-User` as the login name
+    - `X-Auth-User-Email` as the user's email
+    - `X-Auth-User-Name` as the user's name
 
 - `GET /login`: Returns the HTML login form.
 - `POST /login`: Validates the user credentials for the form and sets
