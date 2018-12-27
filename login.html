@@ -3,7 +3,7 @@
 		<title>SSSO</title>
 	</head>
 	<body>
-		<form action="/login" method="post">
+		<form action="{{.SubmitAction}}" method="post">
 			<div>
 				<input type="text" placeholder="Enter Username" name="loginname" required/>
 				<input type="password" placeholder="Enter Password" name="password" required/>

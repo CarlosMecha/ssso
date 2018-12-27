@@ -14,9 +14,10 @@ If the request was successful, the response contains:
     - `X-Auth-User-Email` as the user's email
     - `X-Auth-User-Name` as the user's name
 
-- `GET /login`: Returns the HTML login form.
-- `POST /login`: Validates the user credentials for the form and sets
-the session cookie `ssso-session`.
+- `GET /login[?redirect=<redirect url>]`: Returns the HTML login form.
+- `POST /login[?redirect=<redirect url>]`: Validates the user credentials for the form and sets
+the session cookie `ssso-session`. If the redirect parameter is set, it will return 302 to the redirect
+url.
 - `POST /logout`: Invalidates the current opened session.
 - `GET /me`: Returns the HTML page containing user's information. Can also
 return the JSON representation for API calls.
@@ -41,6 +42,7 @@ All parameters must be defined using environment variables:
 - `SSSO_DB_PASSWORD`: Database password
 - `SSSO_KEY`: Base64 encoded key for encrypt/decrypt text
 - `SSSO_DOMAIN`: Cookie domain, where the cookie is valid
+- `LOG_LEVEL`: Log level, default `info`.
 
 ### Creating a encryption key
 

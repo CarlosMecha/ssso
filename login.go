@@ -3,6 +3,7 @@ package main
 import (
 	"html/template"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -32,7 +33,8 @@ func NewLoginHandler(store *Store, domain, tmplFile string) *LoginHandler {
 
 // LoginContext contains all data for the login template
 type LoginContext struct {
-	Error string
+	SubmitAction string
+	Error        string
 }
 
 func (h *LoginHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -44,7 +46,11 @@ func (h *LoginHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if req.Method == http.MethodGet {
-		WriteHTMLTemplate(200, h.template, LoginContext{}, w)
+		context := LoginContext{SubmitAction: "/login"}
+		if redirect, found := req.URL.Query()["redirect"]; found && len(redirect) > 0 && len(redirect[0]) > 0 {
+			context.SubmitAction += "?redirect=" + url.QueryEscape(redirect[0])
+		}
+		WriteHTMLTemplate(200, h.template, context, w)
 		return
 	}
 
@@ -76,7 +82,15 @@ func (h *LoginHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	http.SetCookie(w, cookie)
 
 	logrus.Debugf("Request to %s %s completed", req.Method, req.URL.Path)
-	http.Redirect(w, req, "/me", 302)
+
+	query := req.URL.Query()
+	if redirect, found := query["redirect"]; found && len(redirect) > 0 {
+		logrus.Debugf("Redirecting to %s", redirect[0])
+		http.Redirect(w, req, redirect[0], 302)
+	} else {
+		logrus.Debugf("Redirecting to /me")
+		http.Redirect(w, req, "/me", 302)
+	}
 }
 
 func getCredentials(r *http.Request) (Credentials, error) {

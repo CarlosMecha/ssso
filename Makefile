@@ -12,7 +12,7 @@ run: build
 clean:
 	rm -f bin/ssso
 
-build-dev:
+build-dev: bin/ssso
 	go build -o _app/app ./_app/
 	docker build --rm -t carlosmecha/ssso-app ./_app/
 	docker build --rm -t carlosmecha/ssso-db ./_database

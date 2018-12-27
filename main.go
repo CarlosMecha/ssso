@@ -68,6 +68,24 @@ func generateKey() {
 func main() {
 	logrus.SetOutput(os.Stdout)
 
+	logLevel := strings.ToLower(Getenv("LOG_LEVEL", "info"))
+	level := logrus.InfoLevel
+	switch logLevel {
+	case "debug":
+		level = logrus.DebugLevel
+	case "info":
+		level = logrus.InfoLevel
+	case "warn":
+		level = logrus.WarnLevel
+	case "error":
+		level = logrus.ErrorLevel
+	case "fatal":
+		level = logrus.FatalLevel
+	case "panic":
+		level = logrus.PanicLevel
+	}
+	logrus.SetLevel(level)
+
 	if len(os.Args) == 2 && os.Args[1] == "generate-key" {
 		generateKey()
 		return
