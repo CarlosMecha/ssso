@@ -126,7 +126,7 @@ func main() {
 
 	http.Handle("/authenticate", &AuthHandler{store})
 	http.Handle("/login", NewLoginHandler(store, Getenv("SSSO_DOMAIN", "mydomain.com"), Getenv("SSSO_DATA", "")+"login.html"))
-	http.Handle("/logout", &LogoutHandler{})
+	http.Handle("/logout", &LogoutHandler{cookieDomain: Getenv("SSSO_DOMAIN", "mydomain.com")})
 	http.Handle("/me", NewMeHandler(store, Getenv("SSSO_DATA", "")+"me.html"))
 	http.Handle("/api", &APIHandler{store})
 	addr := Getenv("SSSO_ADDRESS", ":80")

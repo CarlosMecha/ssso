@@ -7,7 +7,9 @@ import (
 )
 
 // LogoutHandler removes the session cookie
-type LogoutHandler struct{}
+type LogoutHandler struct {
+	cookieDomain string
+}
 
 func (h *LogoutHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	logrus.Debugf("Requesting %s %s", req.Method, req.URL.Path)
@@ -17,19 +19,14 @@ func (h *LogoutHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	cookie, err := req.Cookie(CookieName)
-	if err != nil {
-		if err == http.ErrNoCookie {
-			http.Redirect(w, req, "/login", 302)
-			return
-		}
-		logrus.Errorf("Error reading cookie: %s", err.Error())
-		w.WriteHeader(400)
-		return
+	cookie := &http.Cookie{
+		Name:     CookieName,
+		Value:    "--",
+		Domain:   h.cookieDomain,
+		HttpOnly: true,
+		MaxAge:   -1,
 	}
 
-	cookie.Value = "--"
-	cookie.MaxAge = -1
 	http.SetCookie(w, cookie)
 
 	logrus.Debugf("Request to %s %s completed", req.Method, req.URL.Path)
