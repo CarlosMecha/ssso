@@ -109,7 +109,7 @@ func getCredentials(r *http.Request) (Credentials, error) {
 
 	creds := Credentials{loginName: loginName, password: password}
 	if foundRememberMe && len(remember) > 0 && remember[0] == "remember" {
-		creds.expire = 7 * 24 * time.Hour
+		creds.expire = 2 * 7 * 24 * time.Hour
 	} else {
 		creds.expire = 3 * time.Hour
 	}
